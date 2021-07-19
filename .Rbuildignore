@@ -1,0 +1,13 @@
+^\.DS_Store$
+^\.history$
+.git
+.gitignore
+^build\.txt$
+^note\.R$
+^README\.md$
+^cran-comments\.md$
+macro.txt
+figs
+build.rmd
+^.*\.Rproj$
+^\.Rproj\.user$

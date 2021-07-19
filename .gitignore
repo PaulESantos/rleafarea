@@ -1,0 +1,8 @@
+.RData
+.Rproj.user
+.Rhistory
+vignettes/*.R
+.DS_Store
+build.rmd
+.Rdata
+.httr-oauth
