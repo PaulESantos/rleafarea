@@ -41,7 +41,7 @@
 #' the lower limit of analyzed size can be increased (default = 0.7).
 #' @param upper.size Upper limit for size for the image analysis (default = 
 #' Infinity').
-#' @param prefix Regular expression to manage file names. The `run.ij` combines 
+#' @param prefix Regular expression to manage file names. The `run_ij` combines 
 #' the leaf area of all images that share the same filename 'prefix', defined 
 #' as the part of the filename preceding the first hyphen (-) or period (.) 
 #' that may occur (no hyphen or period is required). For example, the areas of 
@@ -78,7 +78,7 @@
 #' list.files(ex.dir)
 #' 
 #' #run automated images analysis
-#' run.ij(set.directory = ex.dir, save.image = TRUE)
+#' run_ij(set.directory = ex.dir, save.image = TRUE)
 #' 
 #' # note: in this example, analyzed images are exported to a temporary
 #' # directory, which will be eventually deleted.
@@ -86,49 +86,46 @@
 #' # analyzed images will be exported to it.
 
 run_ij <- function(path.imagej = NULL, set.memory = 4, set.directory,
-                   distance.pixel = 826, known.distance = 21,
-                   trim.pixel = 20, trim.pixel2 = 0,
-                   low.circ = 0, upper.circ = 1, low.size = 0.7,
-                   upper.size = "Infinity", prefix = "\\.|-", log = FALSE,
-                   check.image = FALSE, save.image = FALSE){
+                   distance.pixel = 826, known.distance = 21, trim.pixel = 20,
+                   trim.pixel2 = 0, low.circ = 0, upper.circ = 1, low.size = 0.7,
+                   upper.size = "Infinity", prefix = "\\.|-", log = F,
+                   check.image = F, save.image = F){
   
   file.list <- list.files(set.directory)
-  file.list <- file.list[grep(".jpeg$|.jpg$|.JPEG$|.JPG$|.tif$|.tiff$|.Tif$|.Tiff$",
-                              file.list)]
+  file.list <- file.list[grep(".jpeg$|.jpg$|.JPEG$|.JPG$|.tif$|.tiff$|.Tif$|.Tiff$", file.list)]
   
-  if (length(file.list) == 0) 
-    return("No images in the directory")
+  if (length(file.list) == 0) return("No images in the directory")
   
   temp.slash <- substr(set.directory, nchar(set.directory),
                        nchar(set.directory))
   if (temp.slash != "/" & temp.slash != "\\"){
     set.directory <- paste(set.directory, "/", sep = "")
   }
-  #
+  
   circ.arg <- paste(low.circ, upper.circ, sep = "-")
   size.arg <- paste(low.size, upper.size, sep = "-")
-  # OS
+  
+  
   os <- .Platform$OS.type
-  if (is.null(path.imagej) == TRUE){
+  if (is.null(path.imagej) == T){
     imagej <- find.ij(ostype = .Platform$OS.type)
     if (imagej == "ImageJ not found"){
       return("ImageJ not found")
-    }  
-    else{
-      path.imagej <- imagej
-    }
-     # path.imagej <- imagej
+    }  else path.imagej <- imagej
   }
-  # windows
+  
+  ##additional check
   if (os == "windows"){
+    #slash is replaced by backslash because they don't work in batch
     path.imagej <- gsub("/", "\\\\", path.imagej)
-      if (file.exists(paste(path.imagej, "ij.jar", sep = "")) != TRUE &
-        file.exists(paste(path.imagej, "ij.jar", sep = "/")) != TRUE) {
+    
+    if (file.exists(paste(path.imagej, "ij.jar", sep = "")) != T &
+        file.exists(paste(path.imagej, "ij.jar", sep = "/")) != T) {
       warning("ij.jar was not found. Specify the correct path to
               ImageJ directory or reinstall ImageJ bundled with Java")
       return("ImageJ not found")
-    } else if (file.exists(paste(path.imagej, "jre/bin/java.exe", sep = "")) != TRUE &
-               file.exists(paste(path.imagej, "jre/bin/java.exe", sep = "/")) != TRUE) {
+    } else if (file.exists(paste(path.imagej, "jre/bin/java.exe", sep = "")) != T &
+               file.exists(paste(path.imagej, "jre/bin/java.exe", sep = "/")) != T) {
       warning("java was not found. Specify the correct path to
               ImageJ directory or reinstall ImageJ bundled with Java")
       return("ImageJ not found")
@@ -136,8 +133,8 @@ run_ij <- function(path.imagej = NULL, set.memory = 4, set.directory,
   } else {
     unix.check <- Sys.info()["sysname"]
     if (unix.check == "Linux") {
-      if (file.exists(paste(path.imagej, "ij.jar", sep = "")) != TRUE &
-          file.exists(paste(path.imagej, "ij.jar", sep = "/")) != TRUE) {
+      if (file.exists(paste(path.imagej, "ij.jar", sep = "")) != T &
+          file.exists(paste(path.imagej, "ij.jar", sep = "/")) != T) {
         warning("Specify the correct path to ImageJ")
         return("ImageJ not found")
       }
@@ -171,17 +168,15 @@ run_ij <- function(path.imagej = NULL, set.memory = 4, set.directory,
      width = getWidth() - ',trim.pixel, ';\n
      height = getHeight() -',trim.pixel, ' ;\n
      run("Canvas Size...", "width=" + width +
-         " height=" + height + " position=Bottom-Center");\n
-     width2 = getWidth() - ', trim.pixel2, ' ;\n 
-     run("Canvas Size...", "width=" + width2 +
-         " height=" + height + " position=Center-Left");\n
-     run("8-bit");\n
+         " height=" + height + " position=Bottom-Center");\n',
+     ' ;\n width2 = getWidth() - ', trim.pixel2,
+     ' ;\n run("Canvas Size...", "width=" + width2 + " height=" + height + " position=Center-Left");\n',   
+     'run("8-bit");\n
      run("Threshold...");\n
      setAutoThreshold("Minimum");\n
      run("Analyze Particles...", "size=', size.arg,
      ' circularity=', circ.arg,' show=Masks display clear record");\n
-     saveAs("Measurements", dir2+list[i]+".txt");\n 
-     saveAs("tiff", dir+list[i]+ "_mask.tif");\n
+     saveAs("Measurements", dir2+list[i]+".txt");\n saveAs("tiff", dir+list[i]+ "_mask.tif");\n
      }', sep = "")
   } else {
     macro <- paste(
@@ -195,11 +190,10 @@ run_ij <- function(path.imagej = NULL, set.memory = 4, set.directory,
      width = getWidth() - ',trim.pixel, ';\n
      height = getHeight() -',trim.pixel, ' ;\n
      run("Canvas Size...", "width=" + width +
-         " height=" + height + " position=Bottom-Center");\n
-     width2 = getWidth() - ', trim.pixel2, ' ;\n 
-     run("Canvas Size...", "width=" + width2 +
-         " height=" + height + " position=Center-Left");\n     
-     run("8-bit");\n
+         " height=" + height + " position=Bottom-Center");\n',
+     ' ;\n width2 = getWidth() - ', trim.pixel2,
+     ' ;\n run("Canvas Size...", "width=" + width2 + " height=" + height + " position=Center-Left");\n',   
+     'run("8-bit");\n
      run("Threshold...");\n
      setAutoThreshold("Minimum");\n
      run("Analyze Particles...", "size=', size.arg,
@@ -208,10 +202,14 @@ run_ij <- function(path.imagej = NULL, set.memory = 4, set.directory,
      }', sep = "")
   }
   
+  #prepare macro***.txt as tempfile
   tempmacro <- paste(tempfile('macro'), ".txt", sep = "")
+  
   write(macro, file = tempmacro)
-
-  if (check.image == TRUE) {
+  # write(macro, file="~/Desktop/moge.txt")
+  # pathimagej <- system.file("java",package="LeafArea")
+  
+  if (check.image == T) {
     exe <- "-macro "
     wait <- FALSE
   } else {
@@ -219,12 +217,14 @@ run_ij <- function(path.imagej = NULL, set.memory = 4, set.directory,
     wait <- TRUE
   }
   
+  #use it in imageJ
   if (os == "windows"){
+    
     if (length(strsplit(set.directory, " ")[[1]]) > 1) {
       bat <- paste(
         "pushd ", path.imagej, "\n jre\\bin\\java -jar -Xmx",
-        set.memory, "g ij.jar ", exe , tempmacro, ' "', 
-        set.directory, '"\n pause\n exit', sep = "")
+        set.memory, "g ij.jar ",
+        exe , tempmacro, ' "', set.directory, '"\n pause\n exit', sep = "")
     } else {
       bat <- paste(
         "pushd ", path.imagej, "\n jre\\bin\\java -jar -Xmx",
@@ -232,34 +232,37 @@ run_ij <- function(path.imagej = NULL, set.memory = 4, set.directory,
         exe , tempmacro," ",set.directory,"\n pause\n exit", sep = "")
     }
     tempbat <- paste(tempfile('bat'), ".bat", sep = "")
+    
     write(bat, file = tempbat)
+    
     shell(tempbat, wait = wait)
     
   } else {
-    temp.slash2 <- substr(path.imagej,
-                          nchar(path.imagej),
-                          nchar(path.imagej))
+    temp.slash2 <- substr(path.imagej, nchar(path.imagej), nchar(path.imagej))
     if(temp.slash2!="/" ){
       path.imagej <- paste(path.imagej, "/", sep = "")
     }
     
+    # this allows space in path
     set.directory <- gsub(" ", "\\ ", set.directory, fixed = TRUE)
     
     unix.check <- Sys.info()["sysname"]
     if (unix.check == "Linux") {
       system(paste("java -Xmx", set.memory, "g -jar ", path.imagej,
-                   "ij.jar -ijpath ", path.imagej," ", exe, tempmacro,
-                   " ", set.directory,
+                   "ij.jar -ijpath ", path.imagej," ", exe,tempmacro," ", set.directory,
                    sep = ""), wait = wait)
     } else {
-          system(paste("java -Xmx", set.memory, "g -jar ", path.imagej,
-                   "Contents/Java/ij.jar -ijpath ", path.imagej, " ",
-                   exe, tempmacro, " ", set.directory, sep = ""),
-                 wait = wait)
+      #system(paste("java -Xmx", set.memory, "g -jar ", path.imagej,
+      # "Contents/Resources/Java/ij.jar -ijpath ", path.imagej, " ", exe,
+      # tempmacro, " ", set.directory, sep = ""), wait = wait)
+      system(paste("java -Xmx", set.memory, "g -jar ", path.imagej,
+                   "Contents/Java/ij.jar -ijpath ", path.imagej, " ", exe,
+                   tempmacro, " ", set.directory, sep = ""), wait = wait)
     }
   }
   
-  if (check.image == TRUE){
+  #kill imageJ
+  if (check.image == T){
     ans <- readline("Do you want to close ImageJ?
                     Press any keys when you finish cheking analyzed images.")
     if (os == "windows") suppressWarnings(shell('taskkill /f /im "java.exe"'))
@@ -268,18 +271,18 @@ run_ij <- function(path.imagej = NULL, set.memory = 4, set.directory,
     }
   }
   
+  # file managemanet
   res <- resmerge.ij(path = temp, prefix = prefix)
   
-  if (log == TRUE) res2 <- readtext.ij(path = temp)
+  if (log == T) res2 <- readtext.ij(path = temp)
   
+  # unlink
   cd <- getwd()
   setwd(temp)
   unlink(list.files(temp))
   setwd(cd)
   
-  if (log == T) 
-    return(list(summary = res, each.image = res2)) 
-  else return(res)
+  if (log == T) return(list(summary = res, each.image = res2)) else return(res)
   
 }
 
@@ -292,10 +295,3 @@ run_ij <- function(path.imagej = NULL, set.memory = 4, set.directory,
 
 
 # system(paste("java -Xmx",set.memory,"g -jar /Applications/ImageJ/ImageJ64.app/Contents/Resources/Java/ij.jar -ijpath /Applications/ImageJ"," -macro ~/Desktop/moge.txt ",set.directory,sep=""))
-
-# -------------------data--------------------------------------------
-
-#path <- "C:/Users/user/OneDrive/Documentos/rproject/rmbl_enquist_lab/leaf_scans_2021/leaf_scans_transplants_2021/try_leaf"
-#data <- run_ij_1(set.directory = path)
-#data1 <- run_ij_old(set.directory = path)
-#data
